@@ -43,6 +43,26 @@ export async function POST(req: Request) {
       notes,
     } = body;
 
+    // 🔥 DISCORD NOTIFICATION (FIXED)
+    if (process.env.DISCORD_WEBHOOK_URL) {
+      await fetch(process.env.DISCORD_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: `🔥 New Debt Lead
+
+👤 Name: ${firstName} ${lastName || ""}
+📧 Email: ${email}
+📱 Phone: ${phone}
+💰 Debt: ${debtAmount}
+📍 State: ${state || "N/A"}
+          `,
+        }),
+      });
+    }
+
     // 📧 Email transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -52,7 +72,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // 🔁 Send to partner (when approved)
+    // 🔁 Send to partner
     await sendToPartner(body);
 
     // 📧 Email HTML
@@ -65,7 +85,7 @@ export async function POST(req: Request) {
 
       <hr/>
 
-      <h3>Step 2 Details</h3>
+      <h3>Details</h3>
       <p><strong>State:</strong> ${state || "Not provided"}</p>
       <p><strong>Behind on Payments:</strong> ${behindOnPayments || "Not provided"}</p>
       <p><strong>Debt Types:</strong> ${formatList(debtTypes)}</p>
@@ -82,7 +102,7 @@ export async function POST(req: Request) {
       html,
     });
 
-    // 📊 Send to Google Sheets webhook
+    // 📊 Google Sheets webhook
     if (process.env.GOOGLE_SHEET_WEBHOOK) {
       await fetch(process.env.GOOGLE_SHEET_WEBHOOK, {
         method: "POST",
