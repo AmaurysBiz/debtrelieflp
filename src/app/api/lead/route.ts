@@ -58,21 +58,38 @@ export async function POST(req: Request) {
       <p><strong>Debt Amount:</strong> ${debtAmount}</p>
     `;
 
-    // 🔥 DISCORD
-    if (process.env.DISCORD_WEBHOOK_URL) {
-      try {
-        await fetch(process.env.DISCORD_WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: `🔥 New Lead: ${firstName} (${email})`,
-          }),
-        });
-        console.log("✅ Discord sent");
-      } catch (err) {
-        console.error("❌ Discord failed:", err);
-      }
-    }
+    // 🔥 DISCORD (FULL LEAD DETAILS)
+if (process.env.DISCORD_WEBHOOK_URL) {
+  try {
+    await fetch(process.env.DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: `
+🔥 **New Debt Relief Lead**
+
+👤 **Name:** ${firstName} ${lastName || ""}
+📧 **Email:** ${email}
+📱 **Phone:** ${phone}
+💰 **Debt Amount:** ${debtAmount}
+
+📍 **State:** ${state || "N/A"}
+💳 **Debt Types:** ${formatList(debtTypes)}
+⏳ **Behind on Payments:** ${behindOnPayments || "N/A"}
+📊 **Credit Score:** ${creditScore || "N/A"}
+⚠️ **Hardship:** ${hardship || "N/A"}
+
+📝 **Notes:**
+${notes || "None"}
+        `,
+      }),
+    });
+
+    console.log("✅ Discord sent");
+  } catch (err) {
+    console.error("❌ Discord failed:", err);
+  }
+}
 
     // 🔥 TEMP SAFE SENDER (IMPORTANT TEST)
     const FROM_EMAIL = "support@debtoptionsnow.com"; // <-- TEMP FIX
