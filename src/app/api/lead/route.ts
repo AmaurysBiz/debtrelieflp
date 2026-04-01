@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     }
 
     // 🔥 TEMP SAFE SENDER (IMPORTANT TEST)
-    const FROM_EMAIL = "onboarding@resend.dev"; // <-- TEMP FIX
+    const FROM_EMAIL = "support@debtoptionsnow.com"; // <-- TEMP FIX
 
     // 🔥 EMAIL TO YOU
     try {
@@ -98,11 +98,47 @@ export async function POST(req: Request) {
         to: email,
         subject: "You're All Set",
         html: `
-          <h2>You're All Set ✅</h2>
-          <p>Hi ${firstName},</p>
-          <p>We received your request.</p>
-          <p>A specialist will contact you shortly.</p>
-        `,
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+
+    <h2 style="color:#1a1a1a;">You're All Set ✅</h2>
+
+    <p>Hi ${firstName || ""},</p>
+
+    <p>We received your request for debt relief options.</p>
+
+    <p>
+      A licensed specialist will review your information and reach out shortly 
+      to go over your options.
+    </p>
+
+    <div style="background:#f5f7fa; padding:15px; border-radius:8px; margin:20px 0;">
+      <strong>What happens next:</strong>
+      <ul>
+        <li>📞 You may receive a call within the next few hours</li>
+        <li>💬 They’ll review your situation and options</li>
+        <li>🔒 No obligation to proceed</li>
+      </ul>
+    </div>
+
+    <p style="font-size:14px; color:#555;">
+      Please keep your phone nearby so you don’t miss your consultation.
+    </p>
+
+    <p style="font-size:14px; color:#555;">
+We work with licensed debt relief specialists across the U.S.
+</p>
+
+<li>🔒 Your information is kept private and secure</li>
+
+    <hr style="margin:30px 0;" />
+
+    <p style="font-size:12px; color:#888;">
+      Debt Options<br/>
+      support@debtoptionsnow.com
+    </p>
+
+  </div>
+`,
       });
 
       console.log("✅ Email to user:", res2);
