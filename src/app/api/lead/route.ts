@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function formatList(arr?: string[]) {
   if (!arr || arr.length === 0) return "None";
@@ -43,39 +45,7 @@ export async function POST(req: Request) {
       notes,
     } = body;
 
-    // 🔥 DISCORD NOTIFICATION (FIXED)
-    if (process.env.DISCORD_WEBHOOK_URL) {
-      await fetch(process.env.DISCORD_WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: `🔥 New Debt Lead
-
-👤 Name: ${firstName} ${lastName || ""}
-📧 Email: ${email}
-📱 Phone: ${phone}
-💰 Debt: ${debtAmount}
-📍 State: ${state || "N/A"}
-          `,
-        }),
-      });
-    }
-
-    // 📧 Email transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    // 🔁 Send to partner
-    await sendToPartner(body);
-
-    // 📧 Email HTML
+    // 🔥 BUILD EMAIL FIRST (IMPORTANT)
     const html = `
       <h2>🔥 New Debt Relief Lead</h2>
       <p><strong>Name:</strong> ${firstName} ${lastName || ""}</p>
@@ -94,15 +64,86 @@ export async function POST(req: Request) {
       <p><strong>Notes:</strong> ${notes || "None"}</p>
     `;
 
-    // 📧 Send email
-    await transporter.sendMail({
-      from: `"Debt Relief Lead" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_TO,
+    // 🔥 DISCORD
+    if (process.env.DISCORD_WEBHOOK_URL) {
+      await fetch(process.env.DISCORD_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: `🔥 New Debt Lead
+
+👤 Name: ${firstName} ${lastName || ""}
+📧 Email: ${email}
+📱 Phone: ${phone}
+💰 Debt: ${debtAmount}
+📍 State: ${state || "N/A"}`,
+        }),
+      });
+    }
+
+    // 🔥 EMAIL TO YOU
+    await resend.emails.send({
+      from: "Debt Options <support@debtoptionsnow.com>",
+      to: process.env.EMAIL_TO!,
       subject: "🔥 New Debt Relief Lead",
       html,
     });
 
-    // 📊 Google Sheets webhook
+    // 🔥 EMAIL TO USER
+    await resend.emails.send({
+      from: "Debt Options <support@debtoptionsnow.com>",
+      to: email,
+      subject: "You're All Set",
+      html: `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+
+    <h2 style="color:#1a1a1a;">You're All Set ✅</h2>
+
+    <p>Hi ${firstName || ""},</p>
+
+    <p>We received your request for debt relief options.</p>
+
+    <p>
+      A licensed specialist will review your information and reach out shortly 
+      to go over your options.
+    </p>
+
+    <div style="background:#f5f7fa; padding:15px; border-radius:8px; margin:20px 0;">
+      <strong>What happens next:</strong>
+      <ul>
+        <li>📞 You may receive a call within the next few hours</li>
+        <li>💬 They’ll review your situation and options</li>
+        <li>🔒 No obligation to proceed</li>
+      </ul>
+    </div>
+
+    <p style="font-size:14px; color:#555;">
+      Please keep your phone nearby so you don’t miss your consultation.
+    </p>
+
+    <p style="font-size:14px; color:#555;">
+We work with licensed debt relief specialists across the U.S.
+</p>
+
+<li>🔒 Your information is kept private and secure</li>
+
+    <hr style="margin:30px 0;" />
+
+    <p style="font-size:12px; color:#888;">
+      Debt Options<br/>
+      support@debtoptionsnow.com
+    </p>
+
+  </div>
+`,
+    });
+
+    // 🔁 SEND TO PARTNER
+    await sendToPartner(body);
+
+    // 📊 GOOGLE SHEETS
     if (process.env.GOOGLE_SHEET_WEBHOOK) {
       await fetch(process.env.GOOGLE_SHEET_WEBHOOK, {
         method: "POST",
@@ -112,6 +153,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true });
+
   } catch (error) {
     console.error("Lead API error:", error);
     return NextResponse.json({ success: false }, { status: 500 });
